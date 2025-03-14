@@ -1,0 +1,39 @@
+meta:
+  name: Aspen Global Change Institute
+  link: https://www.agci.org
+
+logo:
+  images:
+    medium: staticimages/agci_logo.png
+
+color:
+  palette:
+    blue: "#163AB1"
+    green: "#44A57D"
+    white: "#fafafa"
+    gray: "#454545"
+    neutral: "#F9F7F1"
+    red: "#BA274A"
+  background: white
+  primary: blue
+  secondary: green
+  info: red
+
+typography:
+  fonts:
+    - family: notoSans
+      source: google
+    - family: sans-serif
+      source: google
+
+  base: notoSans
+  headings:
+    family: notoSans
+    weight: 400
+    color: gray
+  monospace: Fira Code
+
+  link:
+    color: info
+    decoration: underline
+
