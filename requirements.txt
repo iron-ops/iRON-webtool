@@ -1,0 +1,11 @@
+shiny
+shinywidgets
+plotly
+pandas
+requests
+jinja2
+ipyleaflet
+matplotlib
+seaborn
+faicons
+htmltools
