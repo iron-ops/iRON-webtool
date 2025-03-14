@@ -5,21 +5,16 @@ import matplotlib.pyplot as plt
 from shiny import App, reactive, render, ui
 from shinywidgets import output_widget, render_widget
 from ipyleaflet import Map, basemaps
-import faicons
-import shiny.experimental as x
 import os
-from htmltools import head_content
+from dotenv import load_dotenv
 
 # -----------------------------------------------------------------------
-# for creating issues in the target repository.
-GITHUB_TOKEN = os.getenv(
-    "GITHUB_TOKEN",
-    "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",
-)
+load_dotenv()
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 # The GitHub owner (user/organization) and repository name
-REPO_OWNER = "iron-ops"
-REPO_NAME = "iRON-webtool"
+REPO_OWNER = os.getenv("REPO_OWNER")
+REPO_NAME = os.getenv("REPO_NAME")
 
 # Add theme from the _brand.yml file
 theme = ui.Theme.from_brand(__file__)
