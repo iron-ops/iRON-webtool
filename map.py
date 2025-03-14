@@ -1,0 +1,55 @@
+import pandas as pd
+
+station_locations = pd.DataFrame(
+    {
+        "name": [
+            "Brush Creek",
+            "Smuggler Mountain",
+            "Glassier Ranch",
+            "Glenwood Springs",
+            "Spring Valley",
+            "Sky Mountain",
+            "North Star Transition Zone",
+            "North Star Aspen Grove",
+            "Castle Creek",
+            "Independence Pass",
+        ],
+        "lat": [
+            39.2335,
+            39.2001,
+            39.3793,
+            39.5441,
+            39.4721,
+            39.2209,
+            19.1711,
+            39.1706,
+            39.0080,
+            39.1069,
+        ],
+        "lon": [
+            -106.9081,
+            -106.8008,
+            -107.0902,
+            -107.3413,
+            -107.2222,
+            -106.9131,
+            -106.7991,
+            -106.7994,
+            -106.7919,
+            -106.5736,
+        ],
+        "elevation": [7780, 9030, 6460, 6200, 7100, 8380, 8050, 8050, 11400, 12080],
+        "status": [
+            "Active",
+            "Active",
+            "Active",
+            "Active",
+            "Active",
+            "Active",
+            "Active",
+            "Active",
+            "Maintenance",
+            "Inactive",
+        ],
+    }
+)

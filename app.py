@@ -4,14 +4,16 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from shiny import App, reactive, render, ui
 from shinywidgets import output_widget, render_widget
-from ipyleaflet import Map, basemaps
+from ipyleaflet import Map, basemaps, Marker, Popup
+import ipywidgets as widgets
 import os
 from dotenv import load_dotenv
+from map import station_locations
 
 # -----------------------------------------------------------------------
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-
+syn_token = os.getenv("syn_token")
 # The GitHub owner (user/organization) and repository name
 REPO_OWNER = os.getenv("REPO_OWNER")
 REPO_NAME = os.getenv("REPO_NAME")
@@ -25,18 +27,70 @@ app_ui = ui.page_fluid(
     ui.page_navbar(
         ui.nav_panel(
             "Dashboard",
-            # First row: Plot and table side by side
             ui.row(
                 ui.layout_columns(
-                    ui.card(ui.output_plot("weather_plot")),
-                    ui.card(ui.output_data_frame("variable_data_output")),
-                    col_widths=(6, 6),
+                    # Sidebar in its own card (left column)
+                    ui.card(
+                        ui.h6(
+                            "(Placeholder text) The Roaring Fork Observation Network (iRON) is a network of soil moisture monitoring \
+                            stations in the Roaring Fork Valley"
+                        ),
+                        ui.input_selectize(
+                            "station",
+                            "Select a station:",
+                            [
+                                "",
+                                "RFBRC",
+                                "RFSMM",
+                                "RFSPV",
+                                "RFNSA",
+                                "RFNST",
+                                "RFGLS",
+                                "RFSKM",
+                                "RFGLR",
+                                "ASEC2",
+                            ],
+                            selected="RFBRC",
+                        ),
+                        ui.input_selectize(
+                            "vars",
+                            "Select a variable:",
+                            [
+                                "",
+                                "air_temp",
+                                "dew_point_temperature",
+                                "relative_humidity",
+                                "soil_temp",
+                                "precip_accum",
+                                "soil_moisture",
+                                "wind_speed",
+                                "wind_direction",
+                                "solar_radiation",
+                                "snow_depth",
+                                "snow_water_equiv",
+                            ],
+                            selected="air_temp",
+                            multiple=True,
+                        ),
+                        ui.input_date_range(
+                            "date_range",
+                            "Date Range",
+                            start="2025-02-06",
+                            end="2025-02-07",
+                            format="yyyy-mm-dd",
+                        ),
+                    ),
+                    # Main content in the middle and right columns
+                    ui.layout_columns(
+                        ui.card(ui.output_plot("weather_plot")),
+                        ui.card(ui.output_data_frame("variable_data_output")),
+                        col_widths=(6, 6),
+                    ),
+                    col_widths=(2, 9),  # Sidebar takes 2 columns, main content takes 9
                 ),
             ),
-            # Second row: Two side-by-side columns for feedback and about
             ui.row(
                 ui.layout_columns(
-                    # Left card: Feedback Input
                     ui.card(
                         ui.input_text(
                             "feedback_text",
@@ -46,15 +100,14 @@ app_ui = ui.page_fluid(
                         ui.input_action_button("submit_feedback", "Submit Feedback"),
                         ui.output_text_verbatim("feedback_status_output"),
                     ),
-                    # Right card: About this App
                     ui.card(
                         ui.card_header("About this app", class_="bg_light"),
                         ui.markdown(
                             """
-                                This app uses data from the Roaring Fork Observation Network in 
-                                the Roaring Fork Valley Watershed. Locations of the stations can 
-                                be found in the Map tab. Here's more on data usage and how to use it.
-                                """
+                            This app uses data from the Roaring Fork Observation Network in 
+                            the Roaring Fork Valley Watershed. Locations of the stations can 
+                            be found in the Map tab. Here's more on data usage and how to use it.
+                            """
                         ),
                     ),
                     col_widths=(6, 6),
@@ -64,64 +117,15 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "Map",
             ui.row(
-                ui.card(output_widget("station_map_output")),
+                ui.card(
+                    output_widget("station_map_output", height="100%", width="100%"),
+                    style="padding: 0px; height: 800px; overflow: hidden;",
+                ),
+                style="width: 100%;",
             ),
         ),
-        title=ui.h1("Roaring Fork Observation Network"),
-        sidebar=ui.sidebar(
-            ui.h6(
-                "(Placeholder text)The Roaring Fork Observation Network (iRON) is a network of soil moisture monitoring \
-                            stations in the Roaring Fork Valley"
-            ),
-            # Can I make some aliases here for the NWIS station codes to put in the station selection?
-            # Should I have separate station selection boxes?
-            ui.input_selectize(
-                "station",
-                "Select a station:",
-                [
-                    "",
-                    "RFBRC",
-                    "RFSMM",
-                    "RFSPV",
-                    "RFNSA",
-                    "RFNST",
-                    "RFGLS",
-                    "RFSKM",
-                    "RFGLR",
-                    "ASEC2",
-                ],
-                selected="RFBRC",
-            ),
-            ui.input_selectize(
-                "vars",
-                "Select a variable:",
-                [
-                    "",
-                    "air_temp",
-                    "dew_point_temperature",
-                    "relative_humidity",
-                    "soil_temp",
-                    "precip_accum",
-                    "soil_moisture",
-                    "wind_speed",
-                    "wind_direction",
-                    "solar_radiation",
-                    "snow_depth",
-                    "snow_water_equiv",
-                ],
-                selected="air_temp",
-                multiple=True,
-            ),
-            ui.input_date_range(
-                "date_range",
-                "Date Range",
-                start="2025-02-06",
-                end="2025-02-07",
-                format="yyyy-mm-dd",
-            ),
-        ),
-    ),  # bring in theme to the ui
-    theme=theme,
+        theme=theme,  # Ensure `theme` is properly defined elsewhere
+    ),
 )
 
 
@@ -241,7 +245,7 @@ def server(input, output, session):
                 f"&start={formatted_start}"
                 f"&end={formatted_end}"
                 f"&vars={get_vars_str()}"
-                "&token=a5cf6d341e9f4902b35550abf3882e68"
+                f"&token={syn_token}"
             )
             # elif station = NWIS then use this url
 
@@ -448,11 +452,41 @@ def server(input, output, session):
                 pd.DataFrame({"Error": [f"Error processing data: {e}"]})
             )
 
+    @output
     @render_widget
     def station_map_output():
-        my_map = Map(center=(39.5, -98.35), zoom=4, basemap=basemaps.CartoDB.Positron)
-        # TODO: Add markers or other layers here if desired
-        return my_map
+        # Create the map with layout to fit the container
+        m = Map(
+            center=(39.336, -107.0439),
+            zoom=10,
+            basemap=basemaps.CartoDB.Positron,
+            layout=widgets.Layout(height="100%", width="100%"),
+        )
+
+        # Add markers for each station
+        for idx, station in station_locations.iterrows():
+            # Create HTML content for the popup
+            popup_content = f"""
+            <div style="min-width: 150px;">
+                <h4>{station["name"]}</h4>
+                <p><b>Elevation:</b> {station["elevation"]} ft</p>
+                <p><b>Status:</b> {station["status"]}</p>
+                <p><b>Coordinates:</b> {station["lat"]:.4f}, {station["lon"]:.4f}</p>
+            </div>
+            """
+
+            # Create a marker with an attached popup
+            marker = Marker(
+                location=(station["lat"], station["lon"]),
+                draggable=False,
+                title=station["name"],  # Shows as tooltip on hover
+                popup=widgets.HTML(popup_content),  # This will show when clicked
+            )
+
+            # Add marker to the map
+            m.add_layer(marker)
+
+        return m
 
 
 app = App(app_ui, server)
